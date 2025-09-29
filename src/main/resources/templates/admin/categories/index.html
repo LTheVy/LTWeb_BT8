@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Danh mục sản phẩm</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+<!-- HEADER -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold" href="#">Danh mục sản phẩm</a>
+        <div class="d-flex align-items-center ms-auto">
+            <span class="text-white me-2">Xin chào</span>
+            <img src="/img/avatar.jpg" 
+                 alt="Avatar" 
+                 class="rounded-circle border border-2" 
+                 style="width:40px; height:40px;">
+        </div>
+    </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<div class="container mt-4 flex-grow-1">
+    <h2 class="mb-3">Category Management</h2>
+    <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#categoryModal">+ Add Category</button>
+    <table class="table table-bordered">
+        <thead class="table-dark">
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Image</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody id="categoryTableBody">
+        <!-- Rows sẽ được load bằng Ajax -->
+        </tbody>
+    </table>
+</div>
+
+<!-- FOOTER -->
+<footer class="bg-dark text-white text-center py-3 mt-auto">
+    <p class="mb-0">23110368 Lục Thế Vỹ</p>
+</footer>
+
+<!-- MODAL -->
+<div class="modal fade" id="categoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="categoryForm" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Category</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="categoryId">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Category Name</label>
+                        <input type="text" id="name" name="name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="imageFile" class="form-label">Image</label>
+                        <input type="file" id="imageFile" name="imageFile" class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Save</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Load categories
+    function loadCategories() {
+        $.get("/api/categories", function (data) {
+            let rows = "";
+            data.forEach(function (cat) {
+                rows += `
+                    <tr>
+                        <td>${cat.id}</td>
+                        <td>${cat.name}</td>
+                        <td>
+                            ${cat.image ? `<img src="/uploads/${cat.image}" width="80">` : ""}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-warning me-1" onclick="editCategory(${cat.id})">Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteCategory(${cat.id})">Delete</button>
+                        </td>
+                    </tr>`;
+            });
+            $("#categoryTableBody").html(rows);
+        });
+    }
+
+    // Save (create/update)
+    $("#categoryForm").submit(function (e) {
+        e.preventDefault();
+        let id = $("#categoryId").val();
+        let formData = new FormData(this);
+        let url = "/api/categories" + (id ? "/" + id : "");
+        let method = id ? "PUT" : "POST";
+
+        $.ajax({
+            url: url,
+            type: method,
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function () {
+                $("#categoryModal").modal("hide");
+                loadCategories();
+                $("#categoryForm")[0].reset();
+                $("#categoryId").val("");
+            }
+        });
+    });
+
+    // Edit
+    function editCategory(id) {
+        $.get("/api/categories/" + id, function (cat) {
+            $("#categoryId").val(cat.id);
+            $("#name").val(cat.name);
+            $("#categoryModal").modal("show");
+        });
+    }
+
+    // Delete
+    function deleteCategory(id) {
+        if (confirm("Are you sure?")) {
+            $.ajax({
+                url: "/api/categories/" + id,
+                type: "DELETE",
+                success: function () {
+                    loadCategories();
+                }
+            });
+        }
+    }
+
+    $(document).ready(function () {
+        loadCategories();
+    });
+</script>
+</body>
+</html>
